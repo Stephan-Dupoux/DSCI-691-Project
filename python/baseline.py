@@ -11,7 +11,7 @@ import numpy as np
 import scipy.sparse
 from collections import Counter
 from sklearn.decomposition import TruncatedSVD
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
 
@@ -37,26 +37,38 @@ data = pd.merge(tweets, classes, how='left')
 # 1.1. Remove '@USER' and any proceeding '_' from tweet variable in dataframe
 data = data.replace(r'@\w+', '', regex=True)
 
+# are there duplicates?
+np.sum(data.duplicated()) 
+# NO!
+# are there missing values?
+data.isnull().sum()
+# no missing values!
+
+
 # 2. split data into training and test sets
-train, test = train_test_split(data, test_size=0.2, stratify= data.label,random_state=691)
-print(f"No. of training examples: {train.shape[0]}")
-print(f"No. of testing examples: {test.shape[0]}")
+# use stratified sampling to balance the classes
+strat_split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=691)
+X = data['tweet'].to_numpy()
+y = data['label'].to_numpy()
+
+for train_index, test_index in strat_split.split(X, y):
+    print(f"Train index: {train_index}", f"Test index: {test_index}")
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index], y[test_index]
+
+# train, test = train_test_split(data, test_size=0.2, stratify= data.label,random_state=691)
+# print(f"No. of training examples: {train.shape[0]}")
+# print(f"No. of testing examples: {test.shape[0]}")
 
 # 3. EDA
 # from pandas_profiling import ProfileReport
-profile_train = pandas_profiling.ProfileReport(train, title="Pandas Profiling Report (Train)")
-profile_train.to_file("DSCI691-GRP-PICKLE_RICK/Task_1/subtask_1a/profile_train.html")
+# profile_train = pandas_profiling.ProfileReport(train, title="Pandas Profiling Report (Train)")
+# profile_train.to_file("DSCI691-GRP-PICKLE_RICK/Task_1/subtask_1a/profile_train.html")
 # Notes:
 # There is a class imbalance in the outcome variable "class"
 # Only 7.2% of the tweets are labeled as "NoADE"
 # see report for more details
 # suggestion from jake: keep data as is
-
-# check for missing values
-train.isnull().sum()
-# no missing values!
-test.isnull().sum()
-# no missing values!
 
 # check for class imbalance
 data.groupby('label').size()
@@ -98,3 +110,9 @@ tfidf = TfidfTransformer()
 # vectorize and transform train and test data
 train_transformed = tfidf.fit_transform(countvec.fit_transform(train.tweet))
 test_transformed = tfidf.transform(countvec.transform(test.tweet)) 
+
+# 5. evaluation
+# classification using logistic regression
+# course notes uses the 'liblinear' solver however sklearn uses the 'lbfgs' solver as default
+log_reg = LogisticRegression(solver='lbfgs', random_state=691, class_weight='balanced')
+
