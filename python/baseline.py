@@ -14,6 +14,7 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import roc_auc_score
 
 
 # import data
@@ -44,6 +45,9 @@ np.sum(data.duplicated())
 data.isnull().sum()
 # no missing values!
 
+# convert label to binary
+data = data.replace(['NoADE', 'ADE'], [0, 1])
+
 
 # 2. split data into training and test sets
 # use stratified sampling to balance the classes
@@ -64,37 +68,25 @@ for train_index, test_index in strat_split.split(X, y):
 # from pandas_profiling import ProfileReport
 # profile_train = pandas_profiling.ProfileReport(train, title="Pandas Profiling Report (Train)")
 # profile_train.to_file("DSCI691-GRP-PICKLE_RICK/Task_1/subtask_1a/profile_train.html")
+# check for class imbalance
+data.groupby('label').size()
+
+# visualize the distribution of y_train data
+import matplotlib.pyplot as plt
+ys = pd.Series(y_train)
+ys.value_counts().plot(kind='bar')
+plt.show()
+
+# test data
+ys2 = pd.Series(y_test)
+ys2.value_counts().plot(kind='bar')
+plt.show()
+
 # Notes:
 # There is a class imbalance in the outcome variable "class"
 # Only 7.2% of the tweets are labeled as "NoADE"
 # see report for more details
 # suggestion from jake: keep data as is
-
-# check for class imbalance
-data.groupby('label').size()
-train.groupby(['label']).size()
-test.groupby(['label']).size()
-
-# visualize the data
-import seaborn as sns
-
-p1 = sns.countplot(x='label', data=train)
-p1.set_title('ADE Dist. in Training Data')
-# show percent of each class
-for p in p1.patches:
-    p1.annotate('{:6.2f}%'.format(p.get_height()/len(train)*100), (p.get_x() + 0.3, p.get_height() + 0.3))
-
-p1.set_xlabel('ADE')
-
-p2 = sns.countplot(x='label', data=test)
-p2.set_title('ADE Dist. in Test Data')
-# show percent of each class
-for p in p2.patches:
-    p2.annotate('{:6.2f}%'.format(p.get_height()/len(test)*100), (p.get_x() + 0.3, p.get_height() + 0.3))
-
-p2.set_xlabel('ADE')
-
-train.info()
 
 # 4. text representation
 # convert tweets to matrix of word counts and remove stop words
@@ -108,11 +100,21 @@ from sklearn.feature_extraction.text import TfidfTransformer
 tfidf = TfidfTransformer()
 
 # vectorize and transform train and test data
-train_transformed = tfidf.fit_transform(countvec.fit_transform(train.tweet))
-test_transformed = tfidf.transform(countvec.transform(test.tweet)) 
+train_transformed = tfidf.fit_transform(countvec.fit_transform(X_train))
+test_transformed = tfidf.transform(countvec.transform(X_test))
 
 # 5. evaluation
 # classification using logistic regression
 # course notes uses the 'liblinear' solver however sklearn uses the 'lbfgs' solver as default
 log_reg = LogisticRegression(solver='lbfgs', random_state=691, class_weight='balanced')
 
+# fit
+log_reg.fit(train_transformed, y_train)
+y_pred = log_reg.predict(test_transformed)
+
+# print results
+print(f"Logistic Regression:")
+print(f"AUC: {roc_auc_score(y_test, y_pred)}")  #0.797
+print(f"Precision: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[0]:.2f}") # 0.37
+print(f"Recall: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[1]:.2f}") # 0.68
+print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[2]:.2f}") # 0.48
