@@ -38,6 +38,9 @@ data = pd.merge(tweets, classes, how='left')
 # 1.1. Remove '@USER' and any proceeding '_' from tweet variable in dataframe
 data = data.replace(r'@\w+', '', regex=True)
 
+# remove any emoji from the tweet
+data = data.replace(r'[^\w\s]', '', regex=True)
+
 # are there duplicates?
 np.sum(data.duplicated()) 
 # NO!
@@ -118,3 +121,6 @@ print(f"AUC: {roc_auc_score(y_test, y_pred)}")  #0.797
 print(f"Precision: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[0]:.2f}") # 0.37
 print(f"Recall: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[1]:.2f}") # 0.68
 print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[2]:.2f}") # 0.48
+
+# 5.a confusion matrix
+from sklearn.metrics import confusion_matrix
