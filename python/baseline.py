@@ -13,6 +13,7 @@ from collections import Counter
 from sklearn.decomposition import TruncatedSVD
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 from sklearn.metrics import precision_recall_fscore_support
 from sklearn.metrics import roc_auc_score
 
@@ -122,5 +123,19 @@ print(f"Precision: {precision_recall_fscore_support(y_test, y_pred, average='bin
 print(f"Recall: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[1]:.2f}") # 0.68
 print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[2]:.2f}") # 0.48
 
-# 5.a confusion matrix
+# confusion matrix
 from sklearn.metrics import confusion_matrix
+mat = confusion_matrix(y_test, y_pred)
+
+# 5.a SVM
+sv_m = SVC(kernel='linear', class_weight='balanced', random_state=691)
+# fit
+sv_m.fit(train_transformed, y_train)
+y_pred_sv = sv_m.predict(test_transformed)
+
+# print results
+print(f"SVM:")
+print(f"AUC: {roc_auc_score(y_test, y_pred_sv)}")
+print(f"Precision: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[0]:.2f}")
+print(f"Recall: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[1]:.2f}")
+print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[2]:.2f}")
