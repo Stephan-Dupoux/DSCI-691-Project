@@ -1,6 +1,9 @@
 # Notebook for creating baselines for classification
 # Project: Adverse Druge Event (ADE) Classification from Tweets
 # Group: pickle rick
+# This script contains two parts: a baseline model using logistic regression and
+# a baseline model using SVM with TF-IDF features 
+
 
 # libraries
 import re
@@ -91,7 +94,7 @@ plt.show()
 # Only 7.2% of the tweets are labeled as "NoADE"
 # see report for more details
 # suggestion from jake: keep data as is
-
+###################################################################################################
 # 4. text representation
 # convert tweets to matrix of word counts and remove stop words
 from sklearn.feature_extraction.text import CountVectorizer
@@ -107,7 +110,9 @@ tfidf = TfidfTransformer()
 train_transformed = tfidf.fit_transform(countvec.fit_transform(X_train))
 test_transformed = tfidf.transform(countvec.transform(X_test))
 
-# 5. evaluation
+###################################################################################################
+# LOGISTIC REGRESSION
+###################################################################################################
 # classification using logistic regression
 # course notes uses the 'liblinear' solver however sklearn uses the 'lbfgs' solver as default
 log_reg = LogisticRegression(solver='lbfgs', random_state=691, class_weight='balanced')
@@ -127,7 +132,11 @@ print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred, average='bina
 from sklearn.metrics import confusion_matrix
 mat = confusion_matrix(y_test, y_pred)
 
-# 5.a SVM
+###################################################################################################
+# SVM WITH TF-IDF FEATURES
+###################################################################################################
+# standard SVM classifier with TF-IDF features
+# linear kernel
 sv_m = SVC(kernel='linear', class_weight='balanced', random_state=691)
 # fit
 sv_m.fit(train_transformed, y_train)
@@ -139,3 +148,4 @@ print(f"AUC: {roc_auc_score(y_test, y_pred_sv)}")
 print(f"Precision: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[0]:.2f}")
 print(f"Recall: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[1]:.2f}")
 print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[2]:.2f}")
+
