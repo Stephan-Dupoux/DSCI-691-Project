@@ -149,3 +149,92 @@ print(f"Precision: {precision_recall_fscore_support(y_test, y_pred_sv, average='
 print(f"Recall: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[1]:.2f}")
 print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred_sv, average='binary', pos_label=1)[2]:.2f}")
 
+######################################################################
+# create baseline word2vec model with tweet data
+
+# input: list of tokenized tweets
+tweets_ls = []
+for tweet in data['tweet']:
+    tweets_ls.append(tweet.split())
+# build word2vec model
+import gensim.models as gm
+# `workers` is the number of cores to use and does not work without Cython
+import Cython
+base_model = gm.Word2Vec(tweets_ls, vector_size=200, min_count=1, workers=4)
+# ran in 1.4 seconds
+base_model.build_vocab(tweets_ls)
+total = base_model.corpus_count
+
+# retrain base_model with GloVe vocaublary and starting weights
+base_model.build_vocab([glove_vec.index_to_key], update=True)
+# train on tweets
+base_model.train(tweets_ls, total_examples=total, epochs=base_model.epochs)
+# set of word vectors with glove weights and trained on tweets
+base_model_wv = base_model.wv # KeyedVectors instance
+
+# function to transform tweets to word2vec vectors
+# accounts for dimensionality of vectors - if word not in base_model_wv, use 0 vector
+# uses the mean of all word vectors in tweet
+def tweet_to_wv(tweets):
+    tweet_wv = []
+    for tweet in tweets:
+        tweet_vec = np.zeros(200)
+        for word in tweet:
+            if word in base_model_wv.index_to_key:
+                tweet_vec += base_model_wv[word]
+            else:
+                tweet_vec += np.zeros(200)
+        tweet_vec /= len(tweet)
+        tweet_wv.append(tweet_vec)
+    return tweet_wv
+
+# transform train and test data
+train_wv = tweet_to_wv(X_train)
+test_wv = tweet_to_wv(X_test)
+##########################################
+# SVM with word2vec features
+# linear kernel
+svm_wv = SVC(kernel='linear', class_weight='balanced', random_state=691)
+# fit ~ 1hr
+svm_wv.fit(train_wv, y_train)
+y_pred_wv = svm_wv.predict(test_wv)
+# save model
+import pickle
+filename = 'DSCI691-GRP-PICKLE_RICK/Project/svm_wv.sav'
+pickle.dump(svm_wv, open(filename, 'wb'))
+
+# print metrics
+from sklearn import metrics
+print(f"SVM with word2vec features:")
+print(metrics.classification_report(y_test, y_pred_wv))
+
+##########################################
+# rbf kernel
+svm_wv_rbf = SVC(kernel='rbf', class_weight='balanced', random_state=691)
+# fit
+svm_wv_rbf.fit(train_wv, y_train)
+y_pred_wv_rbf = svm_wv_rbf.predict(test_wv)
+# save model
+filename = 'DSCI691-GRP-PICKLE_RICK/Project/svm_wv_rbf.sav'
+pickle.dump(svm_wv_rbf, open(filename, 'wb'))
+# print metrics
+print(f"SVM with word2vec features and rbf kernel:")
+print(metrics.classification_report(y_test, y_pred_wv_rbf))
+
+##############################################
+# SVM with rbf kernel and gridsearch
+from sklearn.model_selection import GridSearchCV
+parameters = {
+    'C' : [0.1, 1, 10],
+    'gamma' : [1, 'auto', 'scale']
+}
+svm_wv_rbf2 = GridSearchCV(SVC(kernel='rbf', class_weight='balanced', random_state=691), parameters, cv=5)
+# fit
+svm_wv_rbf2.fit(train_wv, y_train) # ~20 mins
+y_pred_wv_rbf2 = svm_wv_rbf2.predict(test_wv)
+# save model
+filename = 'DSCI691-GRP-PICKLE_RICK/Project/svm_wv_rbf2.sav'
+pickle.dump(svm_wv_rbf2, open(filename, 'wb'))
+# print metrics
+print(f"SVM with word2vec features and rbf kernel and gridsearch:")
+print(metrics.classification_report(y_test, y_pred_wv_rbf2))
