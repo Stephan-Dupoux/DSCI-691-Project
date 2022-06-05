@@ -161,3 +161,6 @@ cython_debug/
 ​
 # mac crap
 .DS_Store
+
+# models
+*.sav
