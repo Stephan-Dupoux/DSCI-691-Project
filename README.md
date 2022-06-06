@@ -2,7 +2,7 @@
 ## [SMM4H Shared Task - 1](https://healthlanguageprocessing.org/smm4h-2022/)
 ### DSCI 691 - NLP with Deep Learning
 
-**The dataset comprises: `./data/`**
+**Datasets in `./data/training/` include:**
 
 - Two training sets
   - `tweets.tsv` - dataset containing `tweet_id` & `tweet`
