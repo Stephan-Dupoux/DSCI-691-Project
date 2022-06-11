@@ -238,3 +238,25 @@ pickle.dump(svm_wv_rbf2, open(filename, 'wb'))
 # print metrics
 print(f"SVM with word2vec features and rbf kernel and gridsearch:")
 print(metrics.classification_report(y_test, y_pred_wv_rbf2))
+
+
+###################################################################################################
+# Multilayer Perceptron 
+###################################################################################################
+# classification using logistic regression
+# course notes uses the 'liblinear' solver however sklearn uses the 'lbfgs' solver as default
+from sklearn.neural_network import MLPClassifier
+
+activation = 'logistic'
+nnet = MLPClassifier(solver='adam', random_state=691, max_iter=300, activation = activation)
+
+# fit
+nnet.fit(train_transformed, y_train)
+y_pred = nnet.predict(test_transformed)
+
+# print results
+print("Multilayer Perceptron: with sigmoid activation")
+print(f"AUC: {roc_auc_score(y_test, y_pred)}")  #0.6867425757489182
+print(f"Precision: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[0]:.2f}") # 0.53
+print(f"Recall: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[1]:.2f}") # 0.40
+print(f"F1 Score: {precision_recall_fscore_support(y_test, y_pred, average='binary', pos_label=1)[2]:.2f}") # 0.46
